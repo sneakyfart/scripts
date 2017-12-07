@@ -14,7 +14,7 @@ VM_NAME=""
 STORAGE=""
 COMPRESS=""
 DATE=`date +%Y-%m-%d`
-LOG_FILE=""$LOG_DIR"/"$VM_NAME"_OVA_backup.log"
+LOG_FILE="${LOG_DIR}/${VM_NAME}_OVA_backup.log"
 ARGS=( $@ )
 
 #############
@@ -25,7 +25,8 @@ function write_log() {
 }
 
 function display_usage() {
-	IFS='' read -r -d '' usage <<'EOF'
+#	IFS='' read -r -d '' usage <<'EOF'
+cat << EOF
 	Usage: -h HOSTNAME -u USERNAME -p PASSWORD -vm VM_NAME -s STORAGE -c COMPRESS
 	HOSTNAME
 		- ESXi hostname where VM is located. IP address will do too.
@@ -40,7 +41,7 @@ function display_usage() {
 		- disks compress ratio. Value must be between 1 and 9. 1 is the fastest, but gives the worst 
 		compression, whereas 9 is the slowest, but gives the best compression.
 EOF
-	echo "$usage"
+#	echo "$usage"
 }
 
 function parse_arguments() {
@@ -48,63 +49,57 @@ function parse_arguments() {
 		for (( i = 0; i < ${#ARGS[@]}; i = i + 2 )); do
 			case "${ARGS[$i]}" in 
 				"-h")
-					if [[ "`echo ${ARGS[((i+1))]} |head -c 1`" == "-" || "${ARGS[((i+1))]}" == "" ]]; then
+					if [[ "$(echo ${ARGS[((i+1))]} |head -c 1)" == "-" || "${ARGS[((i+1))]}" == "" ]]; then
 						write_log "ERROR: hostname is not specified. Aborting.\n"
 						display_usage
 						exit 1
 					else
 						HOSTNAME=${ARGS[((i+1))]}
-						write_log "INFO: hostname is parsed.\n"
 					fi
 					;;
 				"-u")
-					if [[ "`echo ${ARGS[((i+1))]} |head -c 1`" == "-" || "${ARGS[((i+1))]}" == "" ]]; then
+					if [[ "$(echo ${ARGS[((i+1))]} |head -c 1)" == "-" || "${ARGS[((i+1))]}" == "" ]]; then
 						write_log "ERROR: username is not specified. Aborting.\n"
 						display_usage
 						exit 1
 					else
 						USERNAME=${ARGS[((i+1))]}
-						write_log "INFO: username is parsed.\n"
 					fi
 					;;
 				"-p")
-					if [[ "`echo ${ARGS[((i+1))]} |head -c 1`" == "-" || "${ARGS[((i+1))]}" == "" ]]; then
+					if [[ "$(echo ${ARGS[((i+1))]} |head -c 1)" == "-" || "${ARGS[((i+1))]}" == "" ]]; then
 						write_log "ERROR: password is not specified. Aborting.\n"
 						display_usage
 						exit 1
 					else
 						PASSWORD=${ARGS[((i+1))]}
-						write_log "INFO: password is parsed.\n"
 					fi
 					;;
 				"-vm")
-					if [[ "`echo ${ARGS[((i+1))]} |head -c 1`" == "-" || "${ARGS[((i+1))]}" == "" ]]; then
+					if [[ "$(echo ${ARGS[((i+1))]} |head -c 1)" == "-" || "${ARGS[((i+1))]}" == "" ]]; then
 						write_log "ERROR: vm_name is not specified. Aborting.\n"
 						display_usage
 						exit 1
 					else
 						VM_NAME=${ARGS[((i+1))]}
-						write_log "INFO: VM name is parsed.\n"
 					fi
 					;;
 				"-s")
-					if [[ "`echo ${ARGS[((i+1))]} |head -c 1`" == "-" || "${ARGS[((i+1))]}" == "" ]]; then
+					if [[ "$(echo ${ARGS[((i+1))]} |head -c 1)" == "-" || "${ARGS[((i+1))]}" == "" ]]; then
 						write_log "ERROR: storage is not specified. Aborting.\n"
 						display_usage
 						exit 1
 					else
 						STORAGE=${ARGS[((i+1))]}
-						write_log "INFO: storage location is parsed.\n"
 					fi
 					;;
 				"-c")
-					if [[ "`echo ${ARGS[((i+1))]} |head -c 1`" == "-" || "${ARGS[((i+1))]}" == "" ]]; then
+					if [[ "$(echo ${ARGS[((i+1))]} |head -c 1)" == "-" || "${ARGS[((i+1))]}" == "" ]]; then
 						write_log "ERROR: compress ratio is not specified. Aborting.\n"
 						display_usage
 						exit 1
 					else
 						COMPRESS=${ARGS[((i+1))]}
-						write_log "INFO: compress ratio is parced.\n"
 					fi
 					;;
 				*)
@@ -129,8 +124,8 @@ function parse_arguments() {
 
 function get_vm_id() {
 	write_log "INFO: getting $VM_NAME ID...\n"
-	VM_LIST=`ssh $USERNAME@$HOSTNAME "vim-cmd vmsvc/getallvms | grep $VM_NAME; exit"`
-	VM_ID=`echo $VM_LIST | awk '{print $1}'`
+	VM_LIST=$(ssh $USERNAME@$HOSTNAME "vim-cmd vmsvc/getallvms | grep $VM_NAME; exit")
+	VM_ID=$(echo $VM_LIST | awk '{print $1}')
 	if [[ -z "$VM_ID" ]]; then
 		write_log "ERROR: cannot find an ID for VM $VM_NAME on host $HOSTNAME. Please check -vm and -h parameters.\n"
 		exit 1
@@ -141,18 +136,18 @@ function get_vm_id() {
 
 function power_off_vm() {
 	write_log "INFO: trying to power off VM $VM_NAME...\n"
-	VM_STATUS=`ssh $USERNAME@$HOSTNAME "vim-cmd vmsvc/power.getstate $VM_ID | tail -1; exit"`
+	VM_STATUS=$(ssh $USERNAME@$HOSTNAME "vim-cmd vmsvc/power.getstate $VM_ID | tail -1; exit")
 	case "$VM_STATUS" in
 		"Powered on")
 			write_log "INFO: VM $VM_NAME is powered ON. Trying to power off...\n"
-			PROCESS_LIST=`ssh $USERNAME@$HOSTNAME "esxcli vm process list; exit"`
-			WORLD_ID=`echo $PROCESS_LIST | grep -A 1 $VM_NAME | grep "World ID" | awk '{print $4}'`
-			S_PWR_OFF_STATUS=`ssh $USERNAME@$HOSTNAME "exscli vm process kill --type=soft --world-id=$WORLD_ID; echo $?"`
+			PROCESS_LIST=$(ssh $USERNAME@$HOSTNAME "esxcli vm process list; exit")
+			WORLD_ID=$(echo $PROCESS_LIST | grep -A 1 $VM_NAME | grep "World ID" | awk '{print $4}')
+			S_PWR_OFF_STATUS=$(ssh $USERNAME@$HOSTNAME "exscli vm process kill --type=soft --world-id=$WORLD_ID; echo $?")
 			if [[ "$S_PWR_OFF_STATUS" = "0" ]]; then
 				write_log "INFO: VM $VM_NAME was powered off successfully.\n"
 			elif [[ "$S_PWR_OFF_STATUS" = "1" ]]; then
 				write_log "ERROR: soft power off for VM $VM_NAME has failed. Hard mode ON.\n"
-				H_PWR_OFF_STATUS=`ssh $USERNAME@$HOSTNAME "exscli vm process kill --type=hard --world-id=$WORLD_ID; echo $?"`
+				H_PWR_OFF_STATUS=$(ssh $USERNAME@$HOSTNAME "exscli vm process kill --type=hard --world-id=$WORLD_ID; echo $?")
 				if [[ "$H_PWR_OFF_STATUS" = "0" ]]; then
 					write_log "INFO: VM $VM_NAME was powered off hard successfully. This is a bad sign tho.\n"
 					write_log "WARNING: data corruption is possible. Please check VM state manually.\n"
@@ -182,16 +177,16 @@ function power_off_vm() {
 
 function power_on_vm() {
 	write_log "INFO: trying to power on VM $VM_NAME...\n"
-	VM_STATUS=`ssh $USERNAME@$HOSTNAME "vim-cmd vmsvc/power.getstate $VM_ID | tail -1; exit"`
+	VM_STATUS=$(ssh $USERNAME@$HOSTNAME "vim-cmd vmsvc/power.getstate $VM_ID | tail -1; exit")
 	case "$VM_STATUS" in
 		"Powered on")
 			write_log "ERROR: VM $VM_NAME is still powered ON. Aborting.\n"
-			write_log "WARNING: INFO: please check script log above, VM $VM_NAME status and current tasks on host.\n"
+			write_log "WARNING: please check script log above, VM $VM_NAME status and current tasks on host.\n"
 			exit 1
 			;;
 		"Powered off")
 			write_log "INFO: VM $VM_NAME is powered OFF. Trying to power on...\n"
-			PWR_ON_STATUS=`vim-cmd vmsvc/power.on $VM_ID; echo $?`
+			PWR_ON_STATUS=$(vim-cmd vmsvc/power.on $VM_ID; echo $?)
 			if [[ "$PWR_ON_STATUS" = "0" ]]; then
 				write_log "INFO: VM $VM_NAME was powered on successfully.\n"
 				#check S_PWR_OFF H_PWR_OFF and throw warning if hard was done
@@ -219,6 +214,6 @@ write_log "INFO: $DATE VM $VM_NAME OVA backup process has started.\n"
 parse_arguments
 get_vm_id
 power_off_vm
-#ovftool --compress $COMPRESS vi://$USERNAME:$PASSWORD@$HOSTNAME/$VM_NAME $STORAGE.ova
+ovftool --compress $COMPRESS vi://$USERNAME:$PASSWORD@$HOSTNAME/$VM_NAME $STORAGE.ova
 power_on_vm
 write_log "INFO: $DATE VM $VM_NAME OVA backup process has finished.\n"
