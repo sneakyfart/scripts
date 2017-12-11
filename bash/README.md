@@ -1,6 +1,4 @@
-########################
-# vmware_ovf_backup.sh #
-########################
+# vmware_ovf_backup.sh
 The purpose of this script is to make OVA VM backups.
 This is not a great way to make a VM backup but sometimes it's the only option.
 
