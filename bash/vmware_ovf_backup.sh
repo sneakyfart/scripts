@@ -1,20 +1,24 @@
 #!/bin/bash
+# VMware OVA backup script
+# Author: Kirill Yuferev, kyuferev@mera.ru
+# Version: 0.2
+#
+# Script is supposed to be executed via crontab job.
+# To minimize file modifications almost all parameters are parsed from CLI.
+# You only need to modify LOG_DIR location and sendMail options (see PARAMETERS section below).
+#
 ##############
 # PARAMETERS #
 ##############
 # Define log directory here without trailing slash
 LOG_DIR=""
+SEND_MAIL_FROM="sde-noreply@mera.ru"
+SEND_MAIL_TO=""
+
 ##############################################
 # NO CHANGES SHOULD BE MADE BEYOND THIS LINE #
 ##############################################
-USERNAME=""
-PASSWORD=""
-HOSTNAME=""
-VM_NAME=""
-STORAGE=""
-COMPRESS=""
 DATE=$(date +%Y-%m-%d)
-LOG_FILE="${LOG_DIR}/${VM_NAME}_OVA_backup.log"
 ARGS=( $@ )
 
 #############
@@ -25,23 +29,28 @@ function write_log() {
 }
 
 function display_usage() {
-#	IFS='' read -r -d '' usage <<'EOF'
-cat << EOF
-	Usage: -h HOSTNAME -u USERNAME -p PASSWORD -vm VM_NAME -s STORAGE -c COMPRESS
-	HOSTNAME
-		- ESXi hostname where VM is located. IP address will do too.
-	USERNAME & PASSWORD
-		- username & password used to authorize on ESXi host.
-	VM_NAME
-		- virtual machine name shown in ESXi GUI/web GUI. VM name and .vmx file name may differ
-		if VM was renamed somewhere after creation.
-	STORAGE
-		- path to a location where OVA will be stored. Have to be full path and not relative one.
-	COMPRESS
-		- disks compress ratio. Value must be between 1 and 9. 1 is the fastest, but gives the worst 
-		compression, whereas 9 is the slowest, but gives the best compression.
+	cat << EOF
+Usage: -h HOSTNAME -u USERNAME -p PASSWORD -vm VM_NAME -s STORAGE -c COMPRESS
+HOSTNAME
+	- ESXi hostname where VM is located. IP address will do too.
+USERNAME & PASSWORD
+	- username & password used to authorize on ESXi host.
+VM_NAME
+	- virtual machine name shown in ESXi GUI/web GUI. VM name and .vmx file name may differ
+	if VM was renamed somewhere after creation.
+STORAGE
+	- path to a location where OVA will be stored. Have to be full path and not relative one.
+COMPRESS
+	- disks compress ratio. Value must be between 1 and 9. 1 is the fastest, but gives the worst 
+	compression, whereas 9 is the slowest, but gives the best compression.
 EOF
-#	echo "$usage"
+}
+
+function sendMail() {
+	echo "$MSG" | mailx -s "OVA backup script output" -r "$SEND_MAIL_FROM" "$SEND_MAIL_TO"
+	if [ "$(echo $?)" -ne "0" ]; then
+		exit 1
+	fi
 }
 
 function parse_arguments() {
@@ -50,8 +59,9 @@ function parse_arguments() {
 			case "${ARGS[$i]}" in 
 				"-h")
 					if [[ "$(echo "${ARGS[((i+1))]}" |head -c 1)" == "-" || "${ARGS[((i+1))]}" == "" ]]; then
-						write_log "ERROR: hostname is not specified. Aborting.\n"
-						display_usage
+						MSG="Hostname isn't specified, unable to run script."
+						sendMail
+#						display_usage
 						exit 1
 					else
 						HOSTNAME=${ARGS[((i+1))]}
@@ -59,8 +69,9 @@ function parse_arguments() {
 					;;
 				"-u")
 					if [[ "$(echo "${ARGS[((i+1))]}" |head -c 1)" == "-" || "${ARGS[((i+1))]}" == "" ]]; then
-						write_log "ERROR: username is not specified. Aborting.\n"
-						display_usage
+						MSG="Username isn't specified, unable to run script."
+						sendMail
+#						display_usage
 						exit 1
 					else
 						USERNAME=${ARGS[((i+1))]}
@@ -68,8 +79,9 @@ function parse_arguments() {
 					;;
 				"-p")
 					if [[ "$(echo "${ARGS[((i+1))]}" |head -c 1)" == "-" || "${ARGS[((i+1))]}" == "" ]]; then
-						write_log "ERROR: password is not specified. Aborting.\n"
-						display_usage
+						MSG="Password isn't specified, unable to run script."
+						sendMail
+#						display_usage
 						exit 1
 					else
 						PASSWORD=${ARGS[((i+1))]}
@@ -77,8 +89,9 @@ function parse_arguments() {
 					;;
 				"-vm")
 					if [[ "$(echo "${ARGS[((i+1))]}" |head -c 1)" == "-" || "${ARGS[((i+1))]}" == "" ]]; then
-						write_log "ERROR: vm_name is not specified. Aborting.\n"
-						display_usage
+						MSG="VM name isn't specified, unable to run script."
+						sendMail
+#						display_usage
 						exit 1
 					else
 						VM_NAME=${ARGS[((i+1))]}
@@ -86,8 +99,9 @@ function parse_arguments() {
 					;;
 				"-s")
 					if [[ "$(echo "${ARGS[((i+1))]}" |head -c 1)" == "-" || "${ARGS[((i+1))]}" == "" ]]; then
-						write_log "ERROR: storage is not specified. Aborting.\n"
-						display_usage
+						MSG="Storage isn't specified, unable to run script."
+						sendMail
+#						display_usage
 						exit 1
 					else
 						STORAGE=${ARGS[((i+1))]}
@@ -95,21 +109,22 @@ function parse_arguments() {
 					;;
 				"-c")
 					if [[ "$(echo "${ARGS[((i+1))]}" |head -c 1)" == "-" || "${ARGS[((i+1))]}" == "" ]]; then
-						write_log "ERROR: compress ratio is not specified. Aborting.\n"
-						display_usage
+						MSG="Compress ratio isn't specified, unable to run script."
+						sendMail
+#						display_usage
 						exit 1
 					else
 						COMPRESS=${ARGS[((i+1))]}
 					fi
 					;;
 				*)
-					write_log "ERROR: unexpected option. Aborting.\n"
-					display_usage
+					MSG="Unexpected option. Aborting."
+					sendMail
+#					display_usage
 					exit 1
 			esac
 		done
 	else
-		write_log "ERROR: no arguments specified. Aborting.\n"
 		display_usage
 		exit 1
 	fi
