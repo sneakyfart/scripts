@@ -1,7 +1,7 @@
 #!/bin/bash
 # VMware OVA backup script
 # Author: Kirill Yuferev, kyuferev@mera.ru
-# Version: 0.2
+# Version: 0.3
 #
 # Script is supposed to be executed via crontab job.
 # To minimize file modifications almost all parameters are parsed from CLI.
@@ -12,7 +12,7 @@
 ##############
 # Define log directory here without trailing slash
 LOG_DIR=""
-SEND_MAIL_FROM="sde-noreply@mera.ru"
+SEND_MAIL_FROM=""
 SEND_MAIL_TO=""
 
 ##############################################
@@ -58,7 +58,7 @@ function parse_arguments() {
 		for (( i = 0; i < ${#ARGS[@]}; i = i + 2 )); do
 			case "${ARGS[$i]}" in 
 				"-h")
-					if [[ "$(echo "${ARGS[((i+1))]}" |head -c 1)" == "-" || "${ARGS[((i+1))]}" == "" ]]; then
+					if [[ "$(echo "${ARGS[((i+1))]}" | head -c 1)" == "-" || "${ARGS[((i+1))]}" == "" ]]; then
 						MSG="Hostname isn't specified, unable to run script."
 						sendMail
 #						display_usage
@@ -68,7 +68,7 @@ function parse_arguments() {
 					fi
 					;;
 				"-u")
-					if [[ "$(echo "${ARGS[((i+1))]}" |head -c 1)" == "-" || "${ARGS[((i+1))]}" == "" ]]; then
+					if [[ "$(echo "${ARGS[((i+1))]}" | head -c 1)" == "-" || "${ARGS[((i+1))]}" == "" ]]; then
 						MSG="Username isn't specified, unable to run script."
 						sendMail
 #						display_usage
@@ -78,7 +78,7 @@ function parse_arguments() {
 					fi
 					;;
 				"-p")
-					if [[ "$(echo "${ARGS[((i+1))]}" |head -c 1)" == "-" || "${ARGS[((i+1))]}" == "" ]]; then
+					if [[ "$(echo "${ARGS[((i+1))]}" | head -c 1)" == "-" || "${ARGS[((i+1))]}" == "" ]]; then
 						MSG="Password isn't specified, unable to run script."
 						sendMail
 #						display_usage
@@ -88,7 +88,7 @@ function parse_arguments() {
 					fi
 					;;
 				"-vm")
-					if [[ "$(echo "${ARGS[((i+1))]}" |head -c 1)" == "-" || "${ARGS[((i+1))]}" == "" ]]; then
+					if [[ "$(echo "${ARGS[((i+1))]}" | head -c 1)" == "-" || "${ARGS[((i+1))]}" == "" ]]; then
 						MSG="VM name isn't specified, unable to run script."
 						sendMail
 #						display_usage
@@ -98,7 +98,7 @@ function parse_arguments() {
 					fi
 					;;
 				"-s")
-					if [[ "$(echo "${ARGS[((i+1))]}" |head -c 1)" == "-" || "${ARGS[((i+1))]}" == "" ]]; then
+					if [[ "$(echo "${ARGS[((i+1))]}" | head -c 1)" == "-" || "${ARGS[((i+1))]}" == "" ]]; then
 						MSG="Storage isn't specified, unable to run script."
 						sendMail
 #						display_usage
@@ -108,7 +108,7 @@ function parse_arguments() {
 					fi
 					;;
 				"-c")
-					if [[ "$(echo "${ARGS[((i+1))]}" |head -c 1)" == "-" || "${ARGS[((i+1))]}" == "" ]]; then
+					if [[ "$(echo "${ARGS[((i+1))]}" | head -c 1)" == "-" || "${ARGS[((i+1))]}" == "" ]]; then
 						MSG="Compress ratio isn't specified, unable to run script."
 						sendMail
 #						display_usage
@@ -129,13 +129,6 @@ function parse_arguments() {
 		exit 1
 	fi
 }
-
-#function check_log_file() {
-#	LOG="$LOG/"$VM_NAME"_OVA_backup.log"
-#	if [[ -w $LOG ]]; then
-#		
-#	fi
-#}
 
 function get_vm_id() {
 	write_log "INFO: getting $VM_NAME ID...\n"
@@ -225,8 +218,9 @@ function power_on_vm() {
 ########
 # MAIN #
 ########
-write_log "INFO: $DATE VM $VM_NAME OVA backup process has started.\n"
 parse_arguments
+LOG_FILE="${LOG_DIR}/${VM_NAME}_OVA_backup.log"
+write_log "INFO: $DATE VM $VM_NAME OVA backup process has started.\n"
 get_vm_id
 power_off_vm
 ovftool --compress "$COMPRESS" vi://"$USERNAME":"$PASSWORD"@"$HOSTNAME"/"$VM_NAME" "$STORAGE".ova
