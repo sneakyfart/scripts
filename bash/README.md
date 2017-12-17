@@ -8,3 +8,6 @@ The logic of this script is pretty simple:
 3. If VM is powered on then try soft power off. If it fails try hard power off.
 4. Create OVA backup.
 5. Power on VM.
+
+There are a few rough places in this script where putting lines in log file wasn't enough.
+So I've wrote sendMail function to notify the user if something goes wrong. The function itself uses "mailx" to deliver the mail so you have to make sure it's available on a host from where the script is running.
