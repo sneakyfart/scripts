@@ -1,7 +1,8 @@
 #!/bin/bash
 # VMware OVA backup script
 # Author: Kirill Yuferev, kyuferev@mera.ru
-# Version: 0.3
+# Additional email: yuferev.k@protonmail.ch
+# Version: 0.4
 #
 # Script is supposed to be executed via crontab job.
 # To minimize file modifications almost all parameters are parsed from CLI.
@@ -10,7 +11,10 @@
 ##############
 # PARAMETERS #
 ##############
-# Define log directory here without trailing slash
+# Define log directory without trailing slash.
+# For example: LOG_DIR="/foo/bar"
+# Both email addresses should be proper ones (with domain).
+# For example: SEND_MAIL_FROM="foo@bar.com"
 LOG_DIR=""
 SEND_MAIL_FROM=""
 SEND_MAIL_TO=""
