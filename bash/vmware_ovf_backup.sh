@@ -29,7 +29,7 @@ ARGS=( $@ )
 # FUNCTIONS #
 #############
 function write_log() {
-	echo -en "$1" >> $LOG_FILE
+	echo -en "$1" >> "$LOG_FILE"
 }
 
 function display_usage() {
