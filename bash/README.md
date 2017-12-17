@@ -9,5 +9,6 @@ The logic of this script is pretty simple:
 4. Create OVA backup.
 5. Power on VM.
 
-There are a few rough places in this script where putting lines in log file wasn't enough.
-So I've wrote sendMail function to notify the user if something goes wrong. The function itself uses "mailx" to deliver the mail so you have to make sure it's available on a host from where the script is running.
+There are a few rough places in this script where putting lines in log file wasn't enough, so I've wrote sendMail function to notify the user if something goes wrong. In fact, every "exit 1" situation in this script is covered by sendMail function. The function itself uses "mailx" to deliver the mail so you have to make sure it's available on a host from where the script is running.
+
+There also are some room for improvements. The biggest issue so far is that ovftool can't connect to ESXi host using SSH keys. That's why PASSWORD argument is present. In clear text. Which is obviously VERY bad. I've done some poking around and didn't find any elegant and simple solution to this problem.
