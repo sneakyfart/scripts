@@ -15,7 +15,7 @@
 # For example: LOG_DIR="/foo/bar"
 # Both email addresses should be proper ones (with domain).
 # For example: SEND_MAIL_FROM="foo@bar.com"
-LOG_DIR=""
+LOG_DIR="/home/gg"
 SEND_MAIL_FROM=""
 SEND_MAIL_TO=""
 
@@ -150,13 +150,13 @@ function power_off_vm() {
 		"Powered on")
 			write_log "INFO: VM $VM_NAME is powered ON. Trying to power off...\n"
 			PROCESS_LIST=$(ssh "$USERNAME"@"$HOSTNAME" "esxcli vm process list")
-			WORLD_ID=$(echo "$PROCESS_LIST" | grep -A 1 "$VM_NAME" | grep "World ID" | awk '{print $4}')
-			S_PWR_OFF_STATUS=$(ssh "$USERNAME"@"$HOSTNAME" "exscli vm process kill --type=soft --world-id=$WORLD_ID; echo $?")
+			WORLD_ID=$(echo "$PROCESS_LIST" | grep -A 1 "$VM_NAME" | grep "World ID" | awk '{print $3}')
+			S_PWR_OFF_STATUS=$(ssh "$USERNAME"@"$HOSTNAME" "esxcli vm process kill --type=soft --world-id=$WORLD_ID > /dev/null; echo $?")
 			if [[ "$S_PWR_OFF_STATUS" = "0" ]]; then
 				write_log "INFO: VM $VM_NAME was powered off successfully.\n"
 			elif [[ "$S_PWR_OFF_STATUS" = "1" ]]; then
 				write_log "ERROR: soft power off for VM $VM_NAME has failed. Hard mode ON.\n"
-				H_PWR_OFF_STATUS=$(ssh "$USERNAME"@"$HOSTNAME" "exscli vm process kill --type=hard --world-id=$WORLD_ID; echo $?")
+				H_PWR_OFF_STATUS=$(ssh "$USERNAME"@"$HOSTNAME" "esxcli vm process kill --type=hard --world-id=$WORLD_ID > /dev/null; echo $?")
 				if [[ "$H_PWR_OFF_STATUS" = "0" ]]; then
 					write_log "INFO: VM $VM_NAME was powered off hard successfully. This is a bad sign tho.\n"
 					write_log "WARNING: data corruption is possible. Please check VM state manually.\n"
@@ -205,7 +205,7 @@ function power_on_vm() {
 			;;
 		"Powered off")
 			write_log "INFO: VM $VM_NAME is powered OFF. Trying to power on...\n"
-			PWR_ON_STATUS=$(vim-cmd vmsvc/power.on "$VM_ID"; echo $?)
+			PWR_ON_STATUS=$(ssh "$USERNAME"@"$HOSTNAME" "vim-cmd vmsvc/power.on $VM_ID > /dev/null; echo $?")
 			if [[ "$PWR_ON_STATUS" = "0" ]]; then
 				write_log "INFO: VM $VM_NAME was powered on successfully.\n"
 				if [[ "$H_PWR_OFF_STATUS" = "0" ]]; then
@@ -239,9 +239,10 @@ function power_on_vm() {
 ########
 parse_arguments
 LOG_FILE="${LOG_DIR}/${VM_NAME}_OVA_backup.log"
+write_log "==========================================================================\n"
 write_log "INFO: $DATE VM $VM_NAME OVA backup process has started.\n"
 get_vm_id
 power_off_vm
-ovftool --compress "$COMPRESS" vi://"$USERNAME":"$PASSWORD"@"$HOSTNAME"/"$VM_NAME" "$STORAGE".ova
+ovftool --compress="$COMPRESS" vi://"$USERNAME":"$PASSWORD"@"$HOSTNAME"/"$VM_NAME" "$STORAGE"/"$VM_NAME"_"$DATE".ova >> $LOG_FILE
 power_on_vm
 write_log "INFO: $DATE VM $VM_NAME OVA backup process has finished.\n"
