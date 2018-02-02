@@ -15,7 +15,7 @@
 # For example: LOG_DIR="/foo/bar"
 # Both email addresses should be proper ones (with domain).
 # For example: SEND_MAIL_FROM="foo@bar.com"
-LOG_DIR="/home/gg"
+LOG_DIR=""
 SEND_MAIL_FROM=""
 SEND_MAIL_TO=""
 
