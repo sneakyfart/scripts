@@ -2,7 +2,7 @@
 # VMware OVA backup script
 # Author: Kirill Yuferev, kyuferev@mera.ru
 # Additional email: yuferev.k@protonmail.ch
-# Version: 0.5
+# Version: 1.0
 #
 # Script is supposed to be executed via crontab job.
 # To minimize file modifications almost all parameters are parsed from CLI.
