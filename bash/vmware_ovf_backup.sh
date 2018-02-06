@@ -22,7 +22,10 @@ SEND_MAIL_TO=""
 ##############################################
 # NO CHANGES SHOULD BE MADE BEYOND THIS LINE #
 ##############################################
-DATE=$(date +%Y-%m-%d)
+LOG_DATE=$(date +%Y-%m-%d)
+DATE=`date +%F@%T | sed "s/://g"`
+DAY=`date +%A`
+ROTATE_NUM="7"
 ARGS=( $@ )
 
 #############
@@ -234,15 +237,44 @@ function power_on_vm() {
 	esac
 }
 
+function rotate_backups(){
+	if [[ "$DAY" = "Sunday" ]]; then
+		TAIL="weekly.ova"
+	else
+		TAIL="ova"
+	fi
+	if [[ -f ${STORAGE}/${VM_NAME}.*.${ROTATE_NUM}.${TAIL}.gz ]]; then
+		rm -rf ${STORAGE}/${VM_NAME}.*.${ROTATE_NUM}.${TAIL}.gz
+	fi
+	i=`expr ${ROTATE_NUM} - 1`
+	while [ $i -gt 0 ]; do
+		if [[ -f ${STORAGE}/${VM_NAME}.*.$i.${TAIL}.gz ]]; then
+			FNAME=`ls ${STORAGE}/${VM_NAME}.*.$i.${TAIL}.gz | sed "s/[0-9].${TAIL}.gz//g"`
+			mv ${STORAGE}/${VM_NAME}.*.$i.${TAIL}.gz ${FNAME}`expr $i + 1`.${TAIL}.gz
+		fi
+		i=`expr $i - 1`
+	done	
+}
+
 ########
 # MAIN #
 ########
 parse_arguments
 LOG_FILE="${LOG_DIR}/${VM_NAME}_OVA_backup.log"
+OVA_NAME="${VM_NAME}.${DATE}.1"
 write_log "==========================================================================\n"
-write_log "INFO: $DATE VM $VM_NAME OVA backup process has started.\n"
+write_log "INFO: $LOG_DATE VM $VM_NAME OVA backup process has started.\n"
 get_vm_id
+rotate_backups
 power_off_vm
-ovftool --compress="$COMPRESS" vi://"$USERNAME":"$PASSWORD"@"$HOSTNAME"/"$VM_NAME" "$STORAGE"/"$VM_NAME"_"$DATE".ova >> $LOG_FILE
+ovftool --quiet --compress="$COMPRESS" vi://"$USERNAME":"$PASSWORD"@"$HOSTNAME"/"$VM_NAME" "${STORAGE}"/"${OVA_NAME}".${TAIL} | gzip -v -9 "$STORAGE"/"${OVA_NAME}".${TAIL}.gz >> $LOG_FILE
 power_on_vm
-write_log "INFO: $DATE VM $VM_NAME OVA backup process has finished.\n"
+if [[ -f "${STORAGE}/${OVA_NAME}.${TAIL}.gz" ]]; then
+	write_log "INFO: VM $VM_NAME backup file is present.\n"
+else
+	write_log "ERROR: VM $VM_NAME backup file is not present. Please check log file.\n"
+	MSG="VM $VM_NAME backup has failed: ovftool didn't create OVA file."
+	sendMail
+	exit 1
+fi
+write_log "INFO: $LOG_DATE VM $VM_NAME OVA backup process has finished.\n"
